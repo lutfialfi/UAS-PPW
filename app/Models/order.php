@@ -19,12 +19,20 @@ class Order extends Model
         'status'
     ];
 
+    // Relasi ke tabel users
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
+    // Relasi ke tabel order_items
     public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    // Alias tambahan, kalau kamu ingin pakai $order->items juga
+    public function items()
     {
         return $this->hasMany(OrderItem::class);
     }

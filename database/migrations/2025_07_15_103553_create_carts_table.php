@@ -13,7 +13,22 @@ return new class extends Migration
     {
         Schema::create('carts', function (Blueprint $table) {
             $table->id();
+
+            // Relasi ke produk dan user
+            $table->foreignId('product_id')->constrained()->onDelete('cascade');
+            $table->unsignedBigInteger('user_id');
+
+            // Jumlah barang
+            $table->integer('quantity')->default(1);
+
+            $table->timestamp('added_at')->nullable();
             $table->timestamps();
+
+            // Index untuk performa
+            $table->index('user_id');
+
+            // Jika kamu ingin relasi FK user (opsional)
+            // $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

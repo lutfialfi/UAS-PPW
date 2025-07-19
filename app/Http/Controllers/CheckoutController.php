@@ -3,92 +3,86 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use App\Models\Cart;
-use App\Models\Product;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Cart;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
 {
+    // Menampilkan form pengisian alamat & pembayaran
     public function index()
     {
-        // Redirect jika belum login
-        if (!Auth::check()) {
-            return redirect()->route('login')->with('error', 'Anda harus login untuk melanjutkan checkout.');
+        $user = Auth::user();
+        $cartItems = Cart::with('product')->where('user_id', $user->id)->get();
+
+        if ($cartItems->isEmpty()) {
+            return redirect()->route('cart.index')->with('error', 'Keranjang belanja kamu kosong.');
         }
 
-        // Ambil item keranjang user
-        $carts = Cart::where('user_id', Auth::id())->with('product')->get();
-
-        if ($carts->isEmpty()) {
-            return redirect()->route('cart.index')->with('error', 'Keranjang Anda kosong.');
-        }
-
-        // Hitung subtotal
-        $subtotal = $carts->sum(fn($cart) => $cart->product->price * $cart->quantity);
-
-        $shippingCost = 15000; // Biaya tetap
-        $totalAmount = $subtotal + $shippingCost;
-
-        return view('toko.checkout', compact('carts', 'subtotal', 'shippingCost', 'totalAmount'));
+        return view('toko.checkout', compact('cartItems'));
     }
 
-    public function processCheckout(Request $request)
+    // Proses checkout dan simpan order
+    public function process(Request $request)
     {
-        // Validasi input
         $request->validate([
-            'address' => 'required|string|max:255',
-            'city' => 'required|string|max:255',
-            'postal_code' => 'required|string|max:10',
-            'payment_method' => 'required|in:bank_transfer,credit_card,cash_on_delivery',
+            'shipping_address' => 'required|string',
+            'shipping_city' => 'required|string',
+            'shipping_postal_code' => 'required|string',
+            'payment_method' => 'required|string',
         ]);
 
-        $userId = Auth::id();
-        $carts = Cart::where('user_id', $userId)->with('product')->get();
+        $user = Auth::user();
+        $cartItems = Cart::with('product')->where('user_id', $user->id)->get();
 
-        if ($carts->isEmpty()) {
-            return redirect()->route('cart.index')->with('error', 'Keranjang Anda kosong.');
+        if ($cartItems->isEmpty()) {
+            return redirect()->route('cart.index')->with('error', 'Keranjang kamu kosong.');
         }
 
-        $subtotal = $carts->sum(fn($cart) => $cart->product->price * $cart->quantity);
-        $shippingCost = 15000;
-        $totalAmount = $subtotal + $shippingCost;
-
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
+            $total = $cartItems->sum(fn($item) => $item->product->price * $item->quantity);
 
             $order = Order::create([
-                'user_id' => $userId,
-                'total_amount' => $totalAmount,
-                'shipping_address' => $request->address,
-                'shipping_city' => $request->city,
-                'shipping_postal_code' => $request->postal_code,
+                'user_id' => $user->id,
+                'shipping_address' => $request->shipping_address,
+                'shipping_city' => $request->shipping_city,
+                'shipping_postal_code' => $request->shipping_postal_code,
                 'payment_method' => $request->payment_method,
                 'status' => 'pending',
+                'total_amount' => $total,
             ]);
 
-            foreach ($carts as $cart) {
+            foreach ($cartItems as $item) {
                 OrderItem::create([
                     'order_id' => $order->id,
-                    'product_id' => $cart->product_id,
-                    'quantity' => $cart->quantity,
-                    'price' => $cart->product->price,
+                    'product_id' => $item->product_id,
+                    'quantity' => $item->quantity,
+                    'price' => $item->product->price,
                 ]);
-
-                // Jika ingin mengurangi stok produk:
-                // $cart->product->decrement('stock', $cart->quantity);
-
-                $cart->delete();
             }
 
-            DB::commit();
+            Cart::where('user_id', $user->id)->delete();
 
-            return redirect()->route('order.success', $order->id)->with('success', 'Pesanan Anda berhasil dibuat!');
+            DB::commit();
+            return redirect()->route('invoice.show', $order->id);
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memproses pesanan.');
         }
+    }
+
+    // Menampilkan halaman invoice
+    public function invoice($id)
+    {
+        $order = Order::with(['orderItems.product', 'user'])->findOrFail($id);
+
+        if ($order->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        return view('toko.invoice', compact('order'));
     }
 }
