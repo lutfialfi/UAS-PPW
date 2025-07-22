@@ -32,8 +32,9 @@
                                 @endphp
                                 <tr class="border-t hover:bg-gray-50 transition">
                                     <td class="p-4 flex items-center gap-4">
-                                        <img src="{{ asset('image/' . $cart->product->image) }}" alt="{{ $cart->product->name }}"
-                                            class="w-16 h-16 object-cover rounded shadow border">
+                                        <img src="{{ asset('image/' . $cart->product->image) }}" 
+                                             alt="{{ $cart->product->name }}"
+                                             class="w-16 h-16 object-cover rounded shadow border">
                                         <span class="font-medium text-gray-700">{{ $cart->product->name }}</span>
                                     </td>
                                     <td class="text-center">{{ $cart->quantity }}</td>

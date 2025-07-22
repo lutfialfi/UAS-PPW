@@ -1,5 +1,4 @@
 <?php
-// database/seeders/ProductSeeder.php
 
 namespace Database\Seeders;
 
@@ -10,26 +9,48 @@ class ProductSeeder extends Seeder
 {
     public function run(): void
     {
+        DB::table('products')->truncate(); // hapus dulu isi produk lama
+
         DB::table('products')->insert([
             [
-                'nama' => 'headphone-bass',
-                'gambar' => 'headphone-bass.jpg',
+                'name' => 'Kaos Polos Hitam',
+                'category' => 'Fashion',
+                'price' => 75000,
+                'stock' => 20,
+                'description' => 'Kaos katun nyaman dan adem',
+                'image' => 'image/kaos-polos.jpg',
             ],
             [
-                'nama' => 'hoodie-oversize',
-                'gambar' => 'hoodie-oversize.jpg',
+                'name' => 'Sepatu Sneakers X',
+                'category' => 'Footwear',
+                'price' => 350000,
+                'stock' => 10,
+                'description' => 'Sepatu ringan untuk aktivitas',
+                'image' => 'image/sneakers-x.jpg',
             ],
             [
-                'nama' => 'jam-classic',
-                'gambar' => 'jam-classic.jpg',
+                'name' => 'Jam Tangan Classic',
+                'category' => 'Accessories',
+                'price' => 150000,
+                'stock' => 15,
+                'description' => 'Jam tangan analog kulit asli',
+                'image' => 'image/jam-classic.jpg',
             ],
             [
-                'nama' => 'kaos-polos',
-                'gambar' => 'kaos-polos.jpg',
+                'name' => 'Hoodie Oversize',
+                'category' => 'Fashion',
+                'price' => 120000,
+                'stock' => 8,
+                'description' => 'Hoodie bahan fleece tebal',
+                'image' => 'image/hoodie-oversize.jpg',
             ],
             [
-                'nama' => 'sneakers-x',
-                'gambar' => 'sneakers-x.jpg',
+                'name' => 'Headphone Bass HD',
+                'category' => 'Electronics',
+                'price' => 230000,
+                'stock' => 12,
+                'description' => 'Headphone suara jernih dan bass',
+                'image' => 'image/headphone-bass.jpg',
             ],
         ]);
     }
